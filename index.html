@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12213c">
+<title>EDGAR Auth Debug Workbench · 視覺化排錯</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif;color:#182742;background:#f2f5fa;--line:#e0e7f0;--muted:#617189;--blue:#315fd3;--red:#b43f53;--green:#14745c;--navy:#12213c}*{box-sizing:border-box}
+body{margin:0;font-size:14px;line-height:1.55}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #9ebcff;outline-offset:3px}a{text-decoration:none;color:inherit}a:hover{text-decoration:underline}
+.app{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100dvh}
+aside{background:var(--navy);padding:26px 15px;color:#e7efff;display:flex;flex-direction:column;gap:25px}
+.brand{display:flex;gap:10px;align-items:center;padding:0 10px}.mark{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;background:linear-gradient(135deg,#8fbdfa,#c7b2ff);font-size:18px;font-weight:900;color:#22365d}.brand b{display:block;font-size:13px}.brand small{color:#aabbda;font-size:10px}
+.sideHint{padding:0 10px;font-size:10px;font-weight:850;letter-spacing:.15em;color:#889dc3}.caseNav{display:grid;gap:5px}
+.caseBtn{border:0;text-align:left;display:flex;gap:10px;align-items:center;color:#c6d2e9;background:transparent;border-radius:11px;padding:10px 11px}
+.caseBtn[aria-current="true"],.caseBtn:hover{background:#2b4063;color:white}.caseBtn[aria-current="true"]{box-shadow:inset 3px 0 #93b1ff}
+.caseIcon{background:#3a5075;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;flex:none;font-size:17px}
+.caseBtn b{display:block;font-size:12px}.caseBtn small{font-size:10px;color:#9eb2d3}
+.sideFoot{margin-top:auto;border-top:1px solid #30415f;padding:16px 10px 0;font-size:11px;color:#a3b4d2}.sideFoot strong{color:#e5ecff}
+main{min-width:0;padding:22px clamp(16px,3.5vw,48px) 60px;max-width:1700px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.breadcrumb{font-size:11px;color:#7b88a0}
+.back{border:1px solid var(--line);padding:9px 13px;background:white;border-radius:10px;font-weight:760;font-size:11px;white-space:nowrap}
+.eyebrow{color:#4865b4;font-size:10px;letter-spacing:.18em;font-weight:900}.hero h1{font-size:clamp(24px,3.4vw,35px);letter-spacing:-.045em;line-height:1.2;margin:5px 0 8px}.hero p{color:var(--muted);max-width:790px;font-size:13px}
+.notice{background:#ebf1ff;color:#365384;border:1px solid #ccd9f9;border-radius:12px;margin:20px 0;padding:11px 15px;font-size:11px}
+.mobileNav{display:none;gap:8px;overflow-x:auto;margin:10px -2px 17px;padding:2px 2px 8px}.chip{background:white;color:#596c8a;border:1px solid #dbe3ef;padding:9px 12px;border-radius:99px;white-space:nowrap;font-size:11px;font-weight:760}
+.chip[aria-current="true"]{color:#2753bb;background:#e8efff;border-color:#96afe9}
+.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(270px,1fr);gap:16px;align-items:start}
+.card{border:1px solid var(--line);background:white;border-radius:17px;padding:21px;box-shadow:0 10px 34px #2638520b;min-width:0}
+.card+.card{margin-top:16px}.card h2{font-size:18px;letter-spacing:-.03em;margin:0}.muted{color:var(--muted);font-size:12px;margin:4px 0 0}.badge{font-size:10px;font-weight:850;border-radius:99px;padding:5px 9px;background:#f0f2f8;color:#59677e;display:inline-block}
+.badge.red{color:#a8384b;background:#ffebee}.badge.green{color:#176d53;background:#eaf7ef}
+.headrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.summary{margin-top:17px;padding:16px;border-radius:12px;background:linear-gradient(115deg,#1d3157,#3354a1);color:white}
+.summary small{color:#bdcdf3;font-weight:800;letter-spacing:.08em}.summary b{display:block;font-size:20px;letter-spacing:-.025em;margin-top:4px}.summary p{font-size:12px;color:#dbe6ff;margin-top:7px}
+.controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:18px 0}
+.btn{border:1px solid #d7e0ec;background:white;color:#284063;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:800}.btn.primary{background:#315fd3;border-color:#315fd3;color:white}.btn.good{color:#12684f;background:#e9f7ef;border-color:#c8e9d8}.btn:hover{filter:brightness(.97)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.trace{display:grid;grid-template-columns:repeat(4,minmax(115px,1fr));gap:8px;overflow-x:auto;margin:18px 0 12px;padding-bottom:3px}
+.hop{border:1px solid #dce5f0;border-radius:12px;background:#f8fafc;text-align:left;padding:12px 9px;min-width:115px;position:relative}
+.hop b{display:block;font-size:11px;line-height:1.3;margin:6px 0 3px}.hop small{font-size:9px;color:#76859c}.hop span{font-size:22px}.hop[aria-current="step"]{border:2px solid #527cda;background:#edf3ff}.hop.fault{border-color:#e9a1ad;background:#fff0f1}.hop.fixed{border-color:#8dcab0;background:#ecfaf2}.hop .nodeState{display:block;font-weight:850;font-size:9px;letter-spacing:.04em}
+.detail{padding:14px;border-radius:12px;background:#f6f8fc;margin:14px 0}.detail b{display:block;font-size:13px}.detail p{font-size:12px;color:#62738c;margin:5px 0}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}
+.version{border-radius:13px;border:1px solid #e1e7ef;overflow:hidden}
+.versionHeader{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 13px;font-size:12px;font-weight:820}
+.before .versionHeader{background:#fff0f2;color:#a7394b}.after .versionHeader{background:#eaf8ef;color:#176d53}
+.versionContent{padding:13px}.versionContent small{font-weight:820;color:#728198;font-size:10px;letter-spacing:.08em}
+pre{overflow-wrap:anywhere;white-space:pre-wrap;background:#182740;color:#e3edff;border-radius:9px;padding:11px;font-size:10px;line-height:1.6;margin:7px 0 11px;min-height:83px}
+.reason{font-size:11px;color:#5a6a84;min-height:58px}.why{background:#f4f7fd;border-left:3px solid #7093dd;padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0;font-size:12px;color:#465b7e}
+.checks{display:grid;gap:9px;margin-top:15px}.check{display:flex;gap:10px;font-size:12px;padding:10px;border-radius:10px;background:#f7f9fc;color:#4f6080}.checkIcon{font-weight:900;color:#4b71bb}
+.fixList{margin:12px 0 0;padding-left:21px;font-size:12px;color:#465b76}.fixList li{margin:8px 0}
+.liveResult{border-radius:12px;padding:14px;margin-top:16px;background:#fff0f2;color:#963747;border:1px solid #f1c9d1}.liveResult.fixed{background:#ebf8f0;color:#176348;border-color:#bde5ce}.liveResult b{font-size:15px}.liveResult p{font-size:11px;margin:5px 0 0}
+.breakdown{display:grid;gap:9px;margin:15px 0}.metadata{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid var(--line);padding-bottom:8px;font-size:11px}.metadata b{color:#4a5d78}.metadata span{color:#6b7890;text-align:right}
+.foot{font-size:11px;color:#7f8da2;margin:20px 0}
+@media(max-width:1080px){.app{grid-template-columns:212px minmax(0,1fr)}aside{padding:23px 10px}.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.app{display:block}aside{display:none}main{padding:17px 13px 38px}.mobileNav{display:flex}.card{padding:16px}.compare{grid-template-columns:1fr}.reason{min-height:0}.trace{grid-template-columns:repeat(4,minmax(105px,1fr))}.summary b{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside><div class="brand"><div class="mark">E.</div><div><b>EDGAR</b><small>Auth Debug Workbench</small></div></div><div><div class="sideHint">FAILURE SCENARIOS</div><nav class="caseNav" id="caseNav" aria-label="故障案例"></nav></div><div class="sideFoot"><strong>找出是哪一站出錯</strong><p>相同故障，左邊看失敗、右邊看修復。永遠使用假資料。</p></div></aside>
+<main>
+<div class="top"><div class="breadcrumb">EDGAR / Identity Center / Auth Flow Lab / 排錯</div><a class="back" href="https://auth-lab.edgars.tools/lab">← 返回流程實驗室</a></div>
+<div class="eyebrow">VISUAL DEBUGGING · SANITIZED TRACE</div>
+<div class="hero"><h1>不是只看到錯誤，而是看懂怎麼修。</h1><p>挑選常見身份驗證故障，點選有問題的流程節點，對照修復前後的請求與回應。所有封包都是安全的模擬資料。</p></div>
+<div class="notice"><strong>獨立教學樣品。</strong> 這裡不連接 Logto、Descope、YouTrack 或任何真實帳號，也不讀取 Token、私鑰或執行正式修復。</div>
+<nav id="mobileNav" class="mobileNav" aria-label="手機故障案例"></nav>
+<div class="grid">
+<section>
+<div class="card">
+ <div class="headrow"><div><h2 id="caseTitle">故障案例</h2><p class="muted" id="caseSummary">錯誤摘要</p></div><span class="badge red" id="statusBadge">故障中</span></div>
+ <div class="summary"><small id="protocol">OIDC / PKCE</small><b id="errorTitle">invalid_grant</b><p id="symptom">使用者看見的錯誤</p></div>
+ <div class="controls"><button class="btn primary" id="applyFix">✓ 套用示範修復</button><button class="btn" id="resetFix">↺ 還原故障</button><button class="btn" id="copyDiagnosis">複製排錯摘要</button></div>
+ <div class="headrow"><h2 style="font-size:15px">流程在哪裡斷掉？</h2><span class="badge" id="stageNum">STAGE 3 / 4</span></div>
+ <div class="trace" id="trace" aria-label="可點擊的診斷節點"></div>
+ <div class="detail" aria-live="polite"><b id="stepName">步驟</b><p id="stepWhy">原因</p></div>
+ <div class="why" id="diagnosis">診斷推理</div>
+ <div class="liveResult" id="liveResult" role="status"><b>REJECTED</b><p>示範拒絕</p></div>
+</div>
+<div class="card">
+ <div class="headrow"><div><h2>修復前 vs 修復後</h2><p class="muted">比較同一節點的關鍵差異</p></div><span class="badge">示意封包</span></div>
+ <div class="compare">
+  <div class="version before"><div class="versionHeader">✕ 修復前 <span>FAIL</span></div><div class="versionContent"><small>REQUEST / CONTEXT</small><pre id="beforeRequest"></pre><small>RESPONSE</small><pre id="beforeResponse"></pre><p class="reason" id="beforeReason"></p></div></div>
+  <div class="version after"><div class="versionHeader">✓ 修復後 <span>PASS</span></div><div class="versionContent"><small>REQUEST / CONTEXT</small><pre id="afterRequest"></pre><small>RESPONSE</small><pre id="afterResponse"></pre><p class="reason" id="afterReason"></p></div></div>
+ </div>
+</div>
+</section>
+<section>
+ <div class="card"><h2>我應該檢查哪裡？</h2><p class="muted">現場處理時依照順序檢查，避免亂改金鑰。</p><ol class="fixList" id="fixList"></ol></div>
+ <div class="card"><h2>身份與權限脈絡</h2><p class="muted">這次請求中的參與者與權限邊界。</p><div id="meta" class="breakdown"></div><div class="why" id="guardrail">修復前先確認資料與權限。</div></div>
+ <div class="card"><h2>什麼不應該做</h2><div class="checks" id="dontList"></div></div>
+</section>
+</div>
+<div class="foot">EDG-462 · Auth Debug Workbench v0.1 · 所有紀錄為示意，不能作為真實 Logto／SAML／SCIM 服務已支援某功能的證明。</div>
+</main></div>
+<script>
+(()=>{"use strict";
+const examples=[
+{id:"pkce",icon:"🔐",label:"PKCE 驗證失敗",category:"OIDC + PKCE",code:"invalid_grant",symptom:"登入頁已同意，但應用程式交換授權碼時失敗。",summary:"code_verifier 與起初的 code_challenge 不一致。",stage:2,
+ steps:[["授權請求","App 帶 code_challenge 和 state 前往授權服務"],["登入與同意","使用者登入並同意要求的最小權限"],["授權碼交換","Logto 核對 verifier 對應的 challenge，這一步失敗"],["API 存取","沒有有效 token 就不應呼叫 API"]],
+ bad:"POST /oidc/token\ncode=DEMO_CODE\ncode_verifier=WRONG_VERIFIER",good:"POST /oidc/token\ncode=DEMO_CODE\ncode_verifier=ORIGINAL_VERIFIER",fail:"400 {error:'invalid_grant'}",pass:"200 {access_token:'[REDACTED_DEMO]'}",before:"Verifier 在 callback 時被重新產生，無法對上原 Challenge。",after:"保留原 verifier 並一次性消費，同時驗證 state。",checks:["確認授權請求採用 S256，且 Challenge 由同一份 verifier 算出。","確認 callback、跨分頁與 session 暫存沒有重新產生 verifier。","檢查授權碼一次性使用與 redirect_uri 是否一致。"],context:[["Client","EDGAR demo app"],["Issuer","Logto (simulated)"],["Redirect","https://client.example.invalid/callback"],["Code challenge","DEMO_CHALLENGE only"]],guard:"真正的 verifier、授權碼和 Access Token 都不要貼進工單或日誌。",dont:["不要關閉 PKCE 來讓登入暫時成功。","不要重複使用同一個授權碼或把 verifier 當作 Client Secret。"]},
+{id:"aud",icon:"🎯",label:"Token Audience 不符",category:"OAuth / MCP",code:"invalid_token · aud",symptom:"登入成功也拿到 Token，呼叫 MCP 卻收到 401。",summary:"Access Token 是發給另一個資源 API 的。",stage:3,
+ steps:[["登入","使用者或 Client 完成身份驗證"],["取得 Token","Token 的 audience 綁定指定 API"],["傳送 Bearer","Client 呼叫指定 MCP endpoint"],["API 驗證","Resource Server 檢查 JWT audience 不符"]],
+ bad:"GET /mcp\nAuthorization: Bearer [DEMO]\naud=https://knowledge.example.invalid",good:"GET /mcp\nAuthorization: Bearer [DEMO]\naud=https://mcp.example.invalid",fail:"401 invalid_token\nreason: audience_mismatch",pass:"200 OK\n{tools:['discover']}",before:"簽章正確、Token 未過期，也無法取代 aud 驗證。",after:"發起授權前明確指定 MCP 資源，重新取得相符 Token。",checks:["核對 MCP Protected Resource Metadata 中的 resource identifier。","確認 OAuth request 的 resource 與 API 自身的 audience 設定一致。","分清 Knowledge MCP 與一般 MCP 的資源，不要交換使用 Token。"],context:[["Client","Hermes demo client"],["Issuer","Logto (simulated)"],["Requested API","MCP Resource Server"],["Token audience","錯誤地指向 Knowledge"]],guard:"這是示意 URI。正式 EDGAR 資源的 canonical URL 以 EDG-454 已核對設定為準。",dont:["不要跳過 audience 驗證。","不要把 ID Token 當 Access Token 傳給 MCP。"]},
+{id:"scope",icon:"🛂",label:"Scope／Role 權限不足",category:"OAuth / RBAC",code:"403 insufficient_scope",symptom:"可以登入也能讀資料，但一按寫入就出現 403。",summary:"Scope、角色和組織政策並未同時授權。",stage:3,
+ steps:[["會員身份","確認使用者屬於正確組織"],["角色映射","在組織範圍內查詢使用者角色"],["Token Scope","確認用戶端取得的授權範圍"],["API 政策","實際請求需要的 permission 不成立"]],
+ bad:"tenant=alpha\nrole=viewer\nscope=knowledge:read\noperation=knowledge:write",good:"tenant=alpha\nrole=editor\nscope=knowledge:write\noperation=knowledge:write",fail:"403 {error:'insufficient_scope'}",pass:"200 OK\n{updated:true}",before:"有 read 權限不代表可以執行 write；UI 顯示按鈕也不代表後端允許。",after:"經允許提升該成員角色，重新取得有 write scope 的 Token。",checks:["找出實際呼叫的是哪個 API 操作與最低權限。","核對該組織會員的角色及對應 permissions。","核對 Token scope、audience、grant 是否同時涵蓋寫入。"],context:[["Tenant","EDGAR workspace alpha"],["Role","viewer (before)"],["Scope","knowledge:read (before)"],["Action","knowledge:write"]],guard:"不要為了修好單一操作就開放全域 admin；權限需要按資源與租戶限制。",dont:["不要為了消除 403 就把所有 scopes 全勾。","不要只改前端權限顯示，卻不核對 API 的 RBAC。"]},
+{id:"tenant",icon:"🏢",label:"跨租戶存取遭拒",category:"Tenant / Organization",code:"403 tenant_mismatch",symptom:"同一帳號在甲公司能看資料，在乙公司卻沒有權限。",summary:"請求使用的 tenant 不符合會員身份與資源所屬組織。",stage:2,
+ steps:[["登入使用者","取得使用者 ID，與會員身分分開"],["切換組織","選定 UI 的 tenant context"],["確認會員","確認使用者確實屬於選取的租戶"],["讀取資源","按資源所有權判定是否能操作"]],
+ bad:"user=demo-user\ntenant=org-beta\nmembership=org-alpha",good:"user=demo-user\ntenant=org-alpha\nmembership=org-alpha",fail:"403 {reason:'not_a_member'}",pass:"200 OK\n{tenant:'org-alpha'}",before:"授權資料只對 org-alpha 成立，不能帶著它直接跨到 org-beta。",after:"切回合法的組織；若確有需要，由該組織管理員明確核准會員身份。",checks:["核對使用者當下選定的組織與 resource 的 tenant ID。","核對身分系統與應用資料中的 membership mapping。","檢查是否誤用先前組織的 session/token 或 cache。"],context:[["User","demo-user"],["Membership","org-alpha"],["Requested tenant","org-beta (before)"],["Resource","org-alpha data"]],guard:"租戶與組織可以有不同資料模型。不要假設 Logto 的 Organization 就等於系統所有租戶。",dont:["不要關閉租戶隔離過關。","不要用全域管理員 Token 掩蓋 membership 錯誤。"]},
+{id:"saml",icon:"🔏",label:"SAML 簽章驗證失敗",category:"SAML 2.0 / SSO",code:"signature_validation_failed",symptom:"企業登入已完成，回到應用程式時仍被拒絕。",summary:"SP 不信任收到的斷言簽章或簽發者。",stage:3,
+ steps:[["AuthnRequest","應用服務 SP 向企業 IdP 發出登入請求"],["IdP 登入","企業 IdP 驗證使用者"],["SAMLResponse","瀏覽器傳回 IdP 已簽章的斷言"],["SP 驗證","驗證簽章、Issuer、Audience、Recipient、時效"]],
+ bad:"SAMLResponse=[DEMO]\nSignature=INVALID_OR_WRONG_CERT\nAudience=sample-sp",good:"SAMLResponse=[DEMO]\nSignature=VALID_FOR_TRUSTED_CERT\nAudience=sample-sp",fail:"403 {error:'signature_invalid'}",pass:"302 /dashboard\nsession=demo-only",before:"SP 使用錯誤或過期的 IdP 憑證，無法驗證收到的簽章。",after:"核對經認證的 IdP Metadata 與憑證輪替，同時完整驗證其它斷言條件。",checks:["比對 IdP metadata 的 signing certificate 與目前輪替版本。","確認 Issuer、Audience、Recipient、InResponseTo、NotBefore/NotOnOrAfter。","確認 SP 在正確元素驗證 XML Signature，而非只解碼內容。"],context:[["Identity Provider","Enterprise IdP"],["Service Provider","EDGAR demo SP"],["ACS URL","https://sp.example.invalid/acs"],["Signing certificate","[REDACTED_SAMPLE]"]],guard:"正式 SAML 支援與 Logto 部署/授權方案須分開核對；模擬器不代表已啟用。",dont:["不要略過 XML 簽章驗證。","不要為了測試而將正式 IdP 的私鑰貼入表單。"]},
+{id:"scim",icon:"🧬",label:"SCIM 群組同步失敗",category:"SCIM 2.0",code:"403 insufficient_privilege",symptom:"使用者已成功建立，但加入群組時被拒絕。",summary:"SCIM Client 缺少更新 Groups 的授權。",stage:2,
+ steps:[["員工入職","來源系統產生加入事件"],["建立 User","SCIM POST /Users 已成功"],["修改 Group","PATCH /Groups 被服務端權限政策拒絕"],["確認目錄","群組成員未完成一致化"]],
+ bad:"PATCH /scim/v2/Groups/sample-group\nscope=scim:users:write",good:"PATCH /scim/v2/Groups/sample-group\nscope=scim:groups:write",fail:"403 {detail:'Insufficient privilege'}",pass:"200 OK\n{members:['demo-user']}",before:"有建立 Users 的權限，不代表自動有寫入 Groups 權限。",after:"依組織政策核准 Groups 的必要權限，再進行最小範圍重試。",checks:["檢查 SCIM Server 的 Groups PATCH 權限與 Service Provider 設定。","確認 PATCH Operation schema、Group id 和 User id。","比對失敗紀錄與重試設計，避免同一員工被重複建帳。"],context:[["Provisioner","Enterprise SCIM Client"],["User","demo-user"],["Operation","PATCH /Groups"],["Granted permission","Users write only"]],guard:"SCIM 是佈建協定，不是登入協定；也不代表已自動撤銷既有 session。",dont:["不要把 SCIM API token 當登入 Token。","不要把 Groups 成員資格直接當成系統的全域管理員角色。"]},
+{id:"webauthn",icon:"🔑",label:"Passkey Origin 不符",category:"WebAuthn / Passkey",code:"origin_mismatch",symptom:"手機 Face ID／指紋已完成，但伺服器仍拒絕登入。",summary:"Browser Origin 或 RP ID 和受信任站點設定不符。",stage:3,
+ steps:[["請求 Challenge","伺服器提供一次性 challenge"],["Authenticator","裝置持私鑰簽署 challenge"],["送出 Credential","瀏覽器送回簽章與 clientDataJSON"],["Server 驗證","核對 origin、RP ID、challenge 和簽章"]],
+ bad:"origin=https://example.invalid\nrpId=auth.example.invalid",good:"origin=https://auth.example.invalid\nrpId=auth.example.invalid",fail:"400 {verified:false,reason:'origin_mismatch'}",pass:"200 {verified:true}\ncredential=accepted",before:"使用者在不同網域完成動作，簽章無法通過 Origin 驗證。",after:"回到合法的 HTTPS 登入網域，對齊允許的 Origin 和 RP ID。",checks:["確認使用者目前瀏覽器的 HTTPS Origin 與 RP ID 設定。","核對反向代理、callback、跨子網域使用方式。","確認伺服器確實驗證 challenge、RP ID hash、Origin、signature。"],context:[["Browser origin","https://example.invalid"],["Expected origin","https://auth.example.invalid"],["RP ID","auth.example.invalid"],["Authenticator","Passkey sample"]],guard:"網站永遠不應接收 Passkey 私鑰或原始生物特徵。",dont:["不要停用 Origin/RP ID 驗證。","不要要求使用者上傳 Passkey 私鑰或 Face ID 資料。"]}
+];
+let active=0,selected=-1,repaired=false;
+const $=id=>document.getElementById(id);
+const text=(id,s)=>{$(id).textContent=s};
+function create(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;}
+function selectCase(index){active=index;selected=examples[index].stage;repaired=false;render();}
+for(let index=0;index<examples.length;index++){
+ const v=examples[index];for(const [root,klass] of [[$("caseNav"),"caseBtn"],[$("mobileNav"),"chip"]]){
+  const b=create("button",klass);b.type="button";b.dataset.case=v.id;if(klass==="chip"){b.textContent=v.icon+" "+v.label;}else{const i=create("div","caseIcon",v.icon);const c=create("div");c.append(create("b","",v.label),create("small","",v.category));b.append(i,c);}
+  b.addEventListener("click",()=>selectCase(index));root.append(b);
+ }
+}
+function render(){
+ const item=examples[active];if(selected<0)selected=item.stage;
+ document.querySelectorAll("[data-case]").forEach(b=>b.setAttribute("aria-current",b.dataset.case===item.id?"true":"false"));
+ text("caseTitle",item.label);text("caseSummary",item.summary);text("protocol",item.category);text("errorTitle",item.code);text("symptom",item.symptom);
+ text("statusBadge",repaired?"已修復（模擬）":"待排查");$("statusBadge").className="badge "+(repaired?"green":"red");
+ const root=$("trace");root.replaceChildren();
+ item.steps.forEach((s,i)=>{
+  let btn=create("button","hop"+(i===item.stage?(repaired?" fixed":" fault"):""));btn.type="button";btn.setAttribute("aria-current",i===selected?"step":"false");
+  btn.append(create("span","",["◉","⇢","◇","✓"][i]||"●"),create("b","",s[0]),create("small","",i===item.stage?(repaired?"✓ 修復成功":"✕ 故障節點"):"步驟 "+(i+1)));
+  const state=create("div","nodeState",i===item.stage?(repaired?"PASS":"FAIL"):"");btn.append(state);btn.addEventListener("click",()=>{selected=i;render()});root.append(btn);
+ });
+ const d=item.steps[selected];text("stageNum","STAGE "+(selected+1)+" / "+item.steps.length);text("stepName",d[0]);text("stepWhy",d[1]);
+ text("diagnosis",selected===item.stage?item.summary:"這一站不是主要故障點。點選紅色節點可看具體原因與修復前後對比。");
+ text("beforeRequest",selected===item.stage?item.bad:"STEP "+(selected+1)+" (demo)\nrequest: accepted");
+ text("afterRequest",selected===item.stage?item.good:"STEP "+(selected+1)+" (demo)\nrequest: accepted");
+ text("beforeResponse",selected===item.stage?item.fail:"200 OK (demo)");
+ text("afterResponse",selected===item.stage?item.pass:"200 OK (demo)");
+ text("beforeReason",selected===item.stage?item.before:"此節點正常，不是此次的根因。");
+ text("afterReason",selected===item.stage?item.after:"此節點保持原行為，不需要更改設定。");
+ const lr=$("liveResult");lr.classList.toggle("fixed",repaired);lr.replaceChildren();
+ lr.append(create("b","",repaired?"✓ 修復後：模擬通過":"✕ 修復前：模擬拒絕"),create("p","",repaired?"已在範例中調整必要條件。真實系統尚未修改。":"故障節點："+item.steps[item.stage][0]+"。尚未套用範例修復。"));
+ text("applyFix",repaired?"✓ 已套用範例修復":"✓ 套用示範修復");$("applyFix").disabled=repaired;
+ const list=$("fixList");list.replaceChildren();item.checks.forEach(s=>list.append(create("li","",s)));
+ const meta=$("meta");meta.replaceChildren();item.context.forEach(([a,b])=>{const row=create("div","metadata");row.append(create("b","",a),create("span","",b));meta.append(row)});
+ text("guardrail",item.guard);
+ const dont=$("dontList");dont.replaceChildren();item.dont.forEach(s=>{let d=create("div","check");d.append(create("span","checkIcon","!"),create("span","",s));dont.append(d)});
+}
+$("applyFix").addEventListener("click",()=>{repaired=true;selected=examples[active].stage;render()});
+$("resetFix").addEventListener("click",()=>{repaired=false;selected=examples[active].stage;render()});
+$("copyDiagnosis").addEventListener("click",async()=>{
+ const e=examples[active];const output=["EDGAR Auth Debug Workbench（模擬排錯摘要）","故障："+e.label,"協定："+e.category,"錯誤："+e.code,"故障節點："+e.steps[e.stage][0],"判斷："+e.summary,"建議檢查：",...e.checks.map((s,i)=>(i+1)+". "+s),"注意："+e.guard,"聲明：純範例，未讀取真實憑證與伺服器日誌。"].join("\n");
+ try{if(!navigator.clipboard?.writeText)throw Error("clipboard_not_available");await navigator.clipboard.writeText(output);text("copyDiagnosis","✓ 已複製排錯摘要");}catch{ text("copyDiagnosis","複製受限，請用 Safari 開啟");}
+});
+render();
+})();
+</script>
+</body>
+</html>
